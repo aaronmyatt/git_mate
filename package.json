@@ -1,0 +1,22 @@
+{
+  "name": "git_mate",
+  "version": "1.0.0",
+  "description": "Edit files in a repo and see their changes instantly.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aaronmyatt/git_mate.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/aaronmyatt/git_mate/issues"
+  },
+  "homepage": "https://github.com/aaronmyatt/git_mate#readme",
+  "devDependencies": {
+    "live-server": "^1.2.1"
+  }
+}

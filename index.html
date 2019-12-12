@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>GitMate</title>
+    </head>
+    <body>
+        <main id="app">
+            <h1>Git Mate</h1>
+            <a href="https://github.com/login/oauth/authorize?scope=user:email,repo&client_id=d9232348cc678b0636f4">Click here to begin!</a>
+            <div>
+                <a href="#" id="getRepos">Click here to see all repos</a>
+            </div>
+            <div id="repoContent"></div>
+            <div id="repoList"></div>
+        </main>
+        <script src="bling.js"></script>
+        <script src="storage.js"></script>
+        <script>
+            const GetRepos = $('#getRepos')
+            const RepoList = $('#repoList')
+            const RepoContent = $('#repoContent')
+            GetRepos.hidden = true
+            RepoContent.hidden = true
+            RepoList.hidden = true
+
+            const client_id = 'd9232348cc678b0636f4'
+            const client_secret = '889cba8b50a07285c069ec8f18d4179ece95da2f'
+            let accessTokenPath = ''
+            let accessToken = ''
+            const listReposPath = 'https://api.github.com/user/repos'
+
+            const waitForCode = setInterval(function(){
+                const params = new URLSearchParams(document.location.search)
+                const code = params.get('code')
+                if(code){
+                    accessTokenPath = `https://github.com/login/oauth/access_token?code=${code}&client_id=${client_id}&client_secret=${client_secret}`
+
+                    clearInterval(waitForCode)
+
+                    const params = new URLSearchParams(document.location.search)
+                    accessTokenPath = `https://github.com/login/oauth/access_token?code=${code}&client_id=${client_id}&client_secret=${client_secret}`
+                    getAccessToken()
+                }
+            })
+
+            function getAccessToken() {
+                const request = new XMLHttpRequest();
+
+                request.open('POST', accessTokenPath, true);
+                request.setRequestHeader('Accept', 'application/json')
+                request.onload = function() {
+                    console.log(`Status: ${this.status}`)
+                    if (this.status >= 200 && this.status < 400) {
+                        const response = JSON.parse(this.response)
+                        window.store.save('resp', response)
+                    } else {
+                        console.error('Some other noop!')
+                        console.error(this.response)
+
+                    }
+                }
+
+                request.onerror = function() {
+                    console.error('Ellor! noop!')
+                    console.error(this.response)
+                }
+
+                request.send();
+            }
+
+            const waitForAccessToken = setInterval(function() {
+                const response = window.store.get('resp')
+                if(response && 'access_token' in response){
+                    accessToken = response.access_token
+                    GetRepos.hidden = false
+                    clearInterval(waitForAccessToken)
+                }
+            }, 500)
+
+            GetRepos.on('click', getRepos)
+
+            function getRepos() {
+                const request = new XMLHttpRequest()
+                request.open('GET', listReposPath, true)
+                const accessToken = window.store.get('resp').access_token
+                request.setRequestHeader('Authorization', `token ${accessToken}`)
+                request.onload = function() {
+                    if (this.status >= 200 && this.status < 400) {
+                        // Success!
+                        window.store.save('repos', JSON.parse(this.response))
+                        renderRepoList()
+                    } else {
+                        console.error('noop!')
+                        console.error(this.response)
+                    }
+                }
+
+                request.onerror = function() {
+                    console.error('noop!')
+                    console.error(this.response)
+                }
+
+                request.send();
+            }
+            function getRepoContent(repoContentPath) {
+                const request = new XMLHttpRequest()
+                request.open('GET', repoContentPath, true)
+                const accessToken = window.store.get('resp').access_token
+                request.setRequestHeader('Authorization', `token ${accessToken}`)
+                request.onload = function() {
+                    if (this.status >= 200 && this.status < 400) {
+                        // Success!
+                        window.store.save('content', JSON.parse(this.response))
+                        RepoContent.innerText(window.store.get('content'))
+                        RepoContent.hidden = false
+                    } else {
+                        console.error('Not Found!')
+                        console.error(this.response)
+                        RepoContent.innerText = 'No Data Directory in this Repo.'
+                        RepoContent.hidden = false
+                    }
+                }
+
+                request.onerror = function() {
+                    console.error('Not Found!')
+                    console.error(this.response)
+                    RepoContent.innerText = 'No Data Directory in this Repo.'
+                    RepoContent.hidden = false
+                }
+
+                request.send();
+            }
+
+            function renderRepoList(){
+                window.store.get('repos').map((repo) => {
+                    const div = document.createElement('div')
+                    const button = document.createElement('button')
+                    button.id = repo.id
+                    button.innerText = repo.name
+                    button.on('click', function(){
+                        getRepoContent(repo.contents_url.replace('{+path}', 'data'))
+                    })
+                    div.appendChild(button)
+                    RepoList.appendChild(div)
+                })
+                RepoList.hidden = false
+            }
+
+
+        </script>
+    </body>
+</html>
